@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FF Production | Portfolio</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="portfolio-archive-page">
+  <header class="nav">
+    <a class="logo logo-link" href="./index.html#top"><img class="logo-icon" src="./assets/logo/logo-only.png" alt="FF logo" /><span class="ff-accent">FF</span> Production</a>
+    <p class="hero-topline">MAKE VALUE VISIBLE</p>
+    <nav>
+      <a href="./index.html#top"><span>◆</span>Home</a>
+      <a href="./index.html#company"><span>◆</span>About us</a>
+      <a href="./index.html#service"><span>◆</span>Services</a>
+      <a class="contact-nav" href="./index.html#work"><span>◆</span>Portfolio</a>
+      <a href="./index.html#contact"><span>◆</span>Contact us</a>
+    </nav>
+  </header>
+
+  <main class="portfolio-archive">
+    <div class="portfolio-archive-head reveal show">
+      <p>PORTFOLIO ARCHIVE</p>
+    </div>
+
+    <section id="portfolioArchiveList" class="portfolio-archive-list"></section>
+  </main>
+
+  <script>
+    const archiveList = document.getElementById('portfolioArchiveList');
+
+    const extractYoutubeId = (url) => {
+      if (!url) return null;
+      const vParam = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+      if (vParam) return vParam[1];
+      const short = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+      if (short) return short[1];
+      const embed = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+      if (embed) return embed[1];
+      const shorts = url.match(/shorts\/([a-zA-Z0-9_-]{11})/);
+      if (shorts) return shorts[1];
+      return null;
+    };
+
+    const formatDate = (value) => {
+      if (!value) return '날짜 미입력';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    fetch(`./assets/portfolio/portfolio-links.json?v=${Date.now()}`, { cache: 'no-store' })
+      .then((res) => res.ok ? res.json() : [])
+      .then((items) => {
+        if (!Array.isArray(items) || !archiveList) return;
+
+        items
+          .filter((item) => item && item.url)
+          .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
+          .forEach((item) => {
+            const videoId = extractYoutubeId(item.url);
+            const thumb = videoId
+              ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+              : './assets/company/make-value-visible.png';
+
+            const article = document.createElement('article');
+            article.className = 'card portfolio-archive-item';
+            article.innerHTML = `
+              <a href="${item.url}" target="_blank" rel="noopener noreferrer">
+                <img class="portfolio-archive-thumb" src="${thumb}" alt="${item.title || 'Portfolio thumbnail'}" loading="lazy" />
+              </a>
+              <div class="portfolio-archive-meta">
+                <span class="portfolio-archive-date">${formatDate(item.uploadedAt)}</span>
+                <h2 class="portfolio-archive-title">${item.title || '제목 없음'}</h2>
+                <div class="portfolio-archive-actions">
+                  <a class="portfolio-archive-link" href="${item.url}" target="_blank" rel="noopener noreferrer">YouTube 보기</a>
+                </div>
+              </div>
+            `;
+
+            const img = article.querySelector('img');
+            if (img && videoId) {
+              img.addEventListener('error', () => {
+                img.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+              }, { once: true });
+            }
+
+            archiveList.appendChild(article);
+          });
+      })
+      .catch(() => {
+        if (!archiveList) return;
+        archiveList.innerHTML = '<article class="card"><p>포트폴리오를 불러오지 못했습니다.</p></article>';
+      });
+  </script>
+</body>
+</html>
