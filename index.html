@@ -311,6 +311,16 @@
     <div class="contact-heading">
       <h2>CONTACT US</h2>
       <p class="contact-subline">견적 상담 / 제작 의뢰</p>
+      <div class="contact-mobile-actions" aria-label="빠른 문의">
+        <a href="tel:+8250713270390">
+          <strong>전화 상담</strong>
+          <small>0507-1327-0390</small>
+        </a>
+        <a href="mailto:FFproduction.Ai@gmail.com">
+          <strong>이메일 문의</strong>
+          <small>메일 앱으로 연결</small>
+        </a>
+      </div>
     </div>
 
     <div class="contact-layout">
@@ -318,7 +328,7 @@
         <article class="info-card info-card-info">
           <h3>INFO</h3>
           <p>자세한 상담 및 견적에 관한 내용은<br>연락처(Mail/Tel)로 연락주시면 빠른 상담이 가능합니다.</p>
-          <p class="info-note">※ 개인정보 수집/이용에 동의한 것으로 간주됩니다.</p>
+          <p class="info-note">※ 문의 양식 전송 전 개인정보 수집·이용 동의가 필요합니다.</p>
         </article>
 
         <article class="info-card">
@@ -335,6 +345,10 @@
       </div>
 
       <form id="contactForm" class="contact-form dark-form" action="https://formsubmit.co/ajax/FFproduction.Ai@gmail.com" method="post" enctype="multipart/form-data">
+        <div class="contact-form-mobile-intro">
+          <h3>프로젝트 문의</h3>
+          <p>필수 정보를 남겨주시면 확인 후 연락드리겠습니다.</p>
+        </div>
         <input type="hidden" name="_subject" id="formSubjectField" value="[FF Production] 제작 의뢰 문의가 도착했습니다" />
         <input type="hidden" name="_cc" value="FFproduction.Ai@gmail.com" />
         <input type="hidden" name="_captcha" value="false" />
@@ -348,34 +362,38 @@
         <input type="hidden" name="개인정보_수집_이용_동의" id="consentStatusField" value="미동의" />
         <label>
           <span>기업명/담당자 성함 (Company/Name) <em>*</em></span>
-          <input type="text" name="기업명_담당자성함" required />
+          <input type="text" name="기업명_담당자성함" autocomplete="organization" placeholder="기업명 또는 담당자 성함" required />
         </label>
 
         <label>
           <span>연락처 (Phone) <em>*</em></span>
-          <div class="phone-row">
-            <input type="text" id="phone1" maxlength="3" required />
-            <b>-</b>
-            <input type="text" id="phone2" maxlength="4" required />
-            <b>-</b>
-            <input type="text" id="phone3" maxlength="4" required />
+          <div class="phone-row" role="group" aria-label="연락처 번호 입력">
+            <input type="tel" id="phone1" inputmode="numeric" pattern="[0-9]{2,4}" maxlength="4" autocomplete="tel-area-code" aria-label="연락처 앞자리" placeholder="010" required />
+            <b aria-hidden="true">-</b>
+            <input type="tel" id="phone2" inputmode="numeric" pattern="[0-9]{3,4}" maxlength="4" autocomplete="tel-local-prefix" aria-label="연락처 가운데 자리" placeholder="0000" required />
+            <b aria-hidden="true">-</b>
+            <input type="tel" id="phone3" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="tel-local-suffix" aria-label="연락처 끝자리" placeholder="0000" required />
           </div>
         </label>
 
         <label>
           <span>이메일 (E-mail) <em>*</em></span>
-          <input type="email" name="이메일" required />
+          <input type="email" name="이메일" autocomplete="email" autocapitalize="none" placeholder="name@example.com" required />
         </label>
 
         <label>
           <span>상세 내용 (Detail) <em>*</em></span>
-          <textarea name="상세내용" rows="5" required></textarea>
+          <textarea name="상세내용" rows="5" placeholder="제작 목적, 영상 형식, 희망 일정과 예산 등을 알려주세요." required></textarea>
         </label>
 
-        <label class="privacy-consent" for="privacyConsent">
-          <input type="checkbox" id="privacyConsent" />
-          <span>개인정보 수집/이용 동의 <button type="button" class="privacy-policy-link" id="privacyPolicyOpen">(개인정보 수집/이용 동의서 보기)</button></span>
-        </label>
+        <div class="privacy-consent-row">
+          <label class="privacy-consent" for="privacyConsent">
+            <input type="checkbox" id="privacyConsent" required aria-describedby="privacyHelp" />
+            <span>개인정보 수집/이용 동의 <em>*</em></span>
+          </label>
+          <button type="button" class="privacy-policy-link" id="privacyPolicyOpen">동의서 보기</button>
+          <small class="privacy-help" id="privacyHelp">문의 접수와 회신 목적으로만 사용합니다.</small>
+        </div>
 
         <div class="form-actions">
           <button class="btn submit-btn" type="submit">상담 / 의뢰</button>
@@ -420,7 +438,7 @@
     <div class="video-modal-backdrop" data-close-privacy="true"></div>
     <div class="video-modal-card privacy-modal-card">
       <button type="button" id="privacyModalClose" class="video-modal-close" aria-label="닫기">✕</button>
-      <iframe id="privacyModalFrame" title="개인정보 수집/이용 동의서" src="./assets/privacy/privacy-consent.pdf"></iframe>
+      <iframe id="privacyModalFrame" title="개인정보 수집/이용 동의서" data-src="./assets/privacy/privacy-consent.pdf" loading="lazy"></iframe>
     </div>
   </div>
 
@@ -687,7 +705,11 @@
           return;
         }
         if (targetId === 'contact') {
-          window.scrollTo({ top: Math.max(0, centeredTop - 140), behavior: 'smooth' });
+          const navHeight = document.querySelector('.nav')?.getBoundingClientRect().height || 0;
+          const contactTop = window.innerWidth <= 768
+            ? Math.max(0, targetTop - navHeight - 12)
+            : Math.max(0, centeredTop - 140);
+          window.scrollTo({ top: contactTop, behavior: 'smooth' });
           return;
         }
         window.scrollTo({ top: centeredTop, behavior: 'smooth' });
@@ -815,6 +837,7 @@
     const videoModalFrame = document.getElementById('videoModalFrame');
     const videoModalClose = document.getElementById('videoModalClose');
     const privacyModal = document.getElementById('privacyModal');
+    const privacyModalFrame = document.getElementById('privacyModalFrame');
     const privacyModalClose = document.getElementById('privacyModalClose');
     const privacyPolicyOpen = document.getElementById('privacyPolicyOpen');
 
@@ -838,6 +861,7 @@
       if (!privacyModal) return;
       privacyModal.classList.remove('show');
       privacyModal.setAttribute('aria-hidden', 'true');
+      if (privacyModalFrame) privacyModalFrame.removeAttribute('src');
       document.body.classList.remove('modal-open');
     };
 
@@ -876,6 +900,10 @@
     if (privacyPolicyOpen && privacyModal) {
       privacyPolicyOpen.addEventListener('click', (e) => {
         e.preventDefault();
+        const privacyDocumentUrl = privacyModalFrame?.dataset.src;
+        if (privacyModalFrame && privacyDocumentUrl && !privacyModalFrame.getAttribute('src')) {
+          privacyModalFrame.setAttribute('src', privacyDocumentUrl);
+        }
         privacyModal.classList.add('show');
         privacyModal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('modal-open');
