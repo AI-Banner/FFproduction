@@ -1,0 +1,4 @@
+Contact: mailto:FFproduction.Ai@gmail.com
+Expires: 2027-08-14T00:00:00Z
+Preferred-Languages: ko, en
+Canonical: https://ffproduction.co.kr/.well-known/security.txt
