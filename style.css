@@ -741,6 +741,11 @@ body.modal-open {
 .contact-form-mobile-intro {
   display: none;
 }
+.mobile-copy-line,
+.field-label-en,
+.contact-channel-values {
+  display: inline;
+}
 
 .contact-layout {
   width: 100%;
@@ -800,6 +805,15 @@ body.modal-open {
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+.contact-channel-label {
+  color: inherit;
+  font: inherit;
+  font-weight: 400;
+}
+.contact-dark .contact-channel-values,
+.contact-dark .contact-channel-separator {
+  color: inherit;
 }
 
 .contact-form.dark-form {
@@ -1410,6 +1424,36 @@ footer nav a {
     text-wrap: balance;
   }
 
+  .section h2,
+  .section h3,
+  .section p,
+  .section li,
+  .section dd,
+  .section summary,
+  .section small {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .section p,
+  .section li,
+  .section dd,
+  .section summary,
+  .section small {
+    text-wrap: pretty;
+  }
+
+  .section-eyebrow,
+  .mobile-copy-en,
+  .address-en {
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  .mobile-copy-line {
+    display: block;
+  }
+
   .section-eyebrow {
     margin-bottom: 9px;
     font-size: .72rem;
@@ -1719,6 +1763,34 @@ footer nav a {
     overflow-wrap: anywhere;
   }
 
+  .contact-channel {
+    display: grid;
+    gap: 3px;
+  }
+
+  .contact-channel-values {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .contact-channel-separator {
+    display: none;
+  }
+
+  .contact-channel .copy-email,
+  .contact-channel .copy-phone {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+
+  .address-en {
+    text-wrap: pretty;
+  }
+
   .contact-form.dark-form label {
     margin-bottom: 14px;
   }
@@ -1727,6 +1799,17 @@ footer nav a {
     margin-bottom: 7px;
     font-size: 16px;
     line-height: 1.45;
+  }
+
+  .contact-form.dark-form .field-label-en {
+    display: block;
+    margin: 2px 0 0;
+    color: #a9a9a9;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: .01em;
+    word-break: normal;
   }
 
   .contact-form.dark-form input,
