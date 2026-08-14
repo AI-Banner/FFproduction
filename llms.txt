@@ -30,7 +30,6 @@
 
 ## 외부 공식 프로필
 
-- [크몽 FFproduction](https://kmong.com/%40FFproduction)
 - [드롭샷매치 FFproduction](https://match.dropshot.io/profile/FFproduction)
 
 정보 기준일: 2026-08-14
