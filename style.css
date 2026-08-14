@@ -11,6 +11,21 @@ html, body {
 }
 a { color: inherit; text-decoration: none; }
 
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100000;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+  font-weight: 800;
+  transform: translateY(-160%);
+  transition: transform .15s ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
 :root {
   --c-black: #0d0d0d;
   --c-black-soft: #171717;
@@ -143,6 +158,13 @@ a { color: inherit; text-decoration: none; }
   letter-spacing: -.03em;
   opacity: .5;
 }
+.video-content h1 small {
+  display: block;
+  margin-top: 14px;
+  font-size: clamp(14px, 1.8vw, 20px);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
 .ff-accent { color: #ffffff; }
 .video-content p {
   margin: 0;
@@ -223,6 +245,18 @@ a { color: inherit; text-decoration: none; }
   margin: 0 0 24px;
   color: #ffffff;
   letter-spacing: -0.02em;
+}
+.section-heading-korean {
+  margin: 0 0 18px !important;
+  color: #ffffff !important;
+  font-size: clamp(28px, 3.2vw, 42px) !important;
+}
+.section-eyebrow {
+  margin: 0 0 12px;
+  color: #dcbc58;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .16em;
 }
 .section-service h2 { color: #dcbc58; }
 .section-service .tile,
@@ -336,7 +370,8 @@ a { color: inherit; text-decoration: none; }
   padding-bottom: 120px;
 }
 .company-visual {
-  width: min(96vw, 1960px);
+  width: min(100%, 1960px);
+  max-width: 100%;
   height: auto;
   display: block;
   margin: 0 auto 14px;
@@ -398,6 +433,114 @@ a { color: inherit; text-decoration: none; }
   min-height: 100vh;
   justify-content: flex-start;
   align-items: stretch;
+}
+
+.section-geo,
+.section-faq {
+  min-height: auto;
+  margin-top: 120px;
+  margin-bottom: 120px;
+  border: 1px solid #2f2f2f;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #151515 0%, #101010 100%);
+}
+.section-geo h2,
+.section-faq h2 {
+  color: #dcbc58;
+}
+.geo-lead,
+.geo-body {
+  max-width: 900px;
+  margin: 0 0 18px;
+  color: #ededed;
+  font-size: clamp(17px, 1.7vw, 21px);
+  line-height: 1.8;
+}
+.geo-lead strong { color: #ffffff; }
+.geo-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0 36px;
+}
+.geo-facts div {
+  padding: 18px 20px;
+  border: 1px solid #353535;
+  border-radius: 14px;
+  background: rgba(255,255,255,.035);
+}
+.geo-facts dt {
+  margin-bottom: 8px;
+  color: #dcbc58;
+  font-size: .88rem;
+  font-weight: 800;
+}
+.geo-facts dd {
+  margin: 0;
+  color: #ffffff;
+  line-height: 1.55;
+}
+.process-block h3 {
+  margin: 0 0 16px;
+  color: #ffffff;
+  font-size: clamp(23px, 2.5vw, 31px);
+}
+.process-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: process;
+}
+.process-list li {
+  min-height: 156px;
+  padding: 20px 16px;
+  border-radius: 14px;
+  background: #202020;
+  counter-increment: process;
+}
+.process-list li::before {
+  content: "0" counter(process);
+  display: block;
+  margin-bottom: 14px;
+  color: #dcbc58;
+  font-weight: 800;
+}
+.process-list strong,
+.process-list span { display: block; }
+.process-list strong { margin-bottom: 8px; color: #ffffff; }
+.process-list span { color: #cecece; font-size: .9rem; line-height: 1.55; }
+
+.faq-list {
+  display: grid;
+  gap: 12px;
+}
+.faq-list details {
+  border: 1px solid #353535;
+  border-radius: 14px;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+.faq-list summary {
+  padding: 20px 54px 20px 22px;
+  color: #ffffff;
+  font-size: clamp(17px, 1.7vw, 21px);
+  font-weight: 750;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.faq-list details p {
+  margin: 0;
+  padding: 0 22px 22px;
+  color: #d9d9d9;
+  line-height: 1.75;
+}
+.faq-list details p a {
+  color: #f0cf63;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -829,6 +972,18 @@ body.modal-open {
 }
 .submit-btn::after { content: none; }
 footer { text-align: center; color: #cfcfcf; padding: 36px 12px 42px; font-size: .95rem; }
+footer p { margin: 0 0 12px; }
+footer nav {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+footer nav a {
+  color: #dcbc58;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 .submit-modal {
   position: fixed;
@@ -914,6 +1069,7 @@ footer { text-align: center; color: #cfcfcf; padding: 36px 12px 42px; font-size:
   .service-list { grid-template-columns: 1fr; }
   .contact-layout { grid-template-columns: 1fr; }
   .contact-subline { margin-bottom: 54px; }
+  .process-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
@@ -966,6 +1122,9 @@ footer { text-align: center; color: #cfcfcf; padding: 36px 12px 42px; font-size:
   .info-card p { font-size: 15px; }
   .phone-row { max-width: 100%; }
   .phone-row input { width: 31% !important; }
+  .geo-facts { grid-template-columns: 1fr; }
+  .process-list { grid-template-columns: 1fr; }
+  .process-list li { min-height: auto; }
 }
 
 @media (max-width: 560px) {
@@ -1047,12 +1206,25 @@ footer { text-align: center; color: #cfcfcf; padding: 36px 12px 42px; font-size:
 .portfolio-archive-head {
   margin-bottom: 28px;
 }
-.portfolio-archive-head p {
+.portfolio-archive-head > p:first-child {
   margin: 0;
   color: #dcbc58;
   font-weight: 800;
   letter-spacing: .12em;
-  font-size: 50px;
+  font-size: clamp(24px, 5vw, 50px);
+}
+.portfolio-archive-head h1 {
+  margin: 14px 0 12px;
+  color: #ffffff;
+  font-size: clamp(34px, 5vw, 60px);
+  letter-spacing: -.03em;
+}
+.portfolio-archive-intro {
+  max-width: 760px;
+  margin: 0;
+  color: #d7d7d7;
+  font-size: clamp(16px, 1.7vw, 20px);
+  line-height: 1.7;
 }
 .portfolio-archive-list {
   display: flex;
@@ -1084,6 +1256,11 @@ footer { text-align: center; color: #cfcfcf; padding: 36px 12px 42px; font-size:
   font-size: clamp(22px, 2.4vw, 30px);
   line-height: 1.35;
   color: #fff;
+}
+.portfolio-archive-desc {
+  margin: 0;
+  color: #d6d6d6;
+  line-height: 1.65;
 }
 .portfolio-archive-actions {
   display: flex;
