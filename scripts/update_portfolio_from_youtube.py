@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ BASE_VIDEO_URL = 'https://youtu.be/'
 MAX_PLAYLIST_ITEMS = int(os.environ.get('MAX_PLAYLIST_ITEMS', '150'))
 MAX_API_CALLS = int(os.environ.get('MAX_API_CALLS', '10'))
 api_calls = 0
+MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 
 
 def now_iso() -> str:
@@ -44,14 +46,32 @@ def fetch_json(url: str):
     api_calls += 1
     if api_calls > MAX_API_CALLS:
         fail(f'API 호출 수가 안전 기준({MAX_API_CALLS})을 초과했습니다. 자동 동기화를 중단합니다.')
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req, timeout=30) as res:
-        return json.loads(res.read().decode('utf-8'))
+    req = urllib.request.Request(url, headers={'User-Agent': 'FFProduction-Portfolio-Sync/1.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as res:
+            payload = res.read(MAX_RESPONSE_BYTES + 1)
+    except urllib.error.HTTPError as exc:
+        fail(f'YouTube API 응답 오류(HTTP {exc.code})가 발생해 동기화를 중단했습니다.')
+    except urllib.error.URLError:
+        fail('YouTube API 네트워크 오류가 발생해 동기화를 중단했습니다.')
+
+    if len(payload) > MAX_RESPONSE_BYTES:
+        fail('YouTube API 응답 크기가 안전 기준을 초과해 동기화를 중단했습니다.')
+
+    try:
+        return json.loads(payload.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        fail('YouTube API 응답 형식이 올바르지 않아 동기화를 중단했습니다.')
 
 
 def build_url(endpoint: str, **params):
     query = urllib.parse.urlencode(params)
     return f'https://www.googleapis.com/youtube/v3/{endpoint}?{query}'
+
+
+def clean_title(value) -> str:
+    title = ' '.join(str(value or '').split())
+    return ''.join(char for char in title if char.isprintable())[:200]
 
 
 def fetch_playlist_video_ids(playlist_id: str, api_key: str):
@@ -77,7 +97,7 @@ def fetch_playlist_video_ids(playlist_id: str, api_key: str):
             video_id = resource.get('videoId')
             if not video_id:
                 continue
-            title = (snippet.get('title') or '').strip()
+            title = clean_title(snippet.get('title'))
             if title in ('Private video', 'Deleted video'):
                 continue
             ids.append(video_id)
@@ -106,7 +126,9 @@ def fetch_video_details(video_ids, api_key: str):
                 continue
             snippet = item.get('snippet', {})
             video_id = item.get('id')
-            title = (snippet.get('title') or '').strip()
+            if not isinstance(video_id, str) or len(video_id) != 11 or not all(char.isalnum() or char in '_-' for char in video_id):
+                continue
+            title = clean_title(snippet.get('title'))
             published_at = (snippet.get('publishedAt') or '')[:10]
             details.append({
                 'key': f'yt-{video_id}',
