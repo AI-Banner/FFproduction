@@ -3,7 +3,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://ffproduction.co.kr/</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -13,12 +13,12 @@
   </url>
   <url>
     <loc>https://ffproduction.co.kr/portfolio.html</loc>
-    <lastmod>2026-08-14</lastmod>
+    <lastmod>2026-08-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
       <image:loc>https://img.youtube.com/vi/YsVx1RGFMu0/maxresdefault.jpg</image:loc>
-      <image:title>울산 AI 영화·애니메이션·VFX 영상 제작 포트폴리오</image:title>
+      <image:title>FF Production AI 영상·VFX 제작 포트폴리오</image:title>
     </image:image>
   </url>
 </urlset>

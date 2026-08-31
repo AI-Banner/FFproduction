@@ -1,0 +1,6 @@
+# Local review copy retained outside the deployed site tree
+0831 수정/
+
+# Python cache
+__pycache__/
+*.py[cod]

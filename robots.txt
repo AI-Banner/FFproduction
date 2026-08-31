@@ -10,4 +10,7 @@ Allow: /
 User-agent: ChatGPT-User
 Allow: /
 
+User-agent: PerplexityBot
+Allow: /
+
 Sitemap: https://ffproduction.co.kr/sitemap.xml
