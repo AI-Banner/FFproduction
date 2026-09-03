@@ -14,8 +14,8 @@ API_KEY = os.environ.get('YOUTUBE_API_KEY', '').strip()
 OUTPUT_PATH = Path(os.environ.get('PORTFOLIO_OUTPUT_PATH', 'assets/portfolio/portfolio-links.json'))
 STATUS_PATH = Path(os.environ.get('PORTFOLIO_STATUS_PATH', 'assets/portfolio/portfolio-status.json'))
 BASE_VIDEO_URL = 'https://youtu.be/'
-MAX_PLAYLIST_ITEMS = int(os.environ.get('MAX_PLAYLIST_ITEMS', '150'))
-MAX_API_CALLS = int(os.environ.get('MAX_API_CALLS', '10'))
+MAX_PLAYLIST_ITEMS = int(os.environ.get('MAX_PLAYLIST_ITEMS', '1000'))
+MAX_API_CALLS = int(os.environ.get('MAX_API_CALLS', '60'))
 api_calls = 0
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 
@@ -24,7 +24,7 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
-def write_status(locked: bool, reason: str, source: str = 'youtube-channel-search-sync'):
+def write_status(locked: bool, reason: str, source: str = 'youtube-channel-uploads-sync'):
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         'locked': locked,
@@ -42,7 +42,7 @@ def fail(message: str, lock_site: bool = True):
     raise SystemExit(1)
 
 
-def fetch_json(url: str):
+def fetch_json(url: str, not_found_ok: bool = False):
     global api_calls
     api_calls += 1
     if api_calls > MAX_API_CALLS:
@@ -52,6 +52,8 @@ def fetch_json(url: str):
         with urllib.request.urlopen(req, timeout=30) as res:
             payload = res.read(MAX_RESPONSE_BYTES + 1)
     except urllib.error.HTTPError as exc:
+        if not_found_ok and exc.code == 404:
+            return None
         fail(f'YouTube API 응답 오류(HTTP {exc.code})가 발생해 동기화를 중단했습니다.')
     except urllib.error.URLError:
         fail('YouTube API 네트워크 오류가 발생해 동기화를 중단했습니다.')
@@ -93,14 +95,71 @@ def resolve_channel_id(channel_id: str, channel_handle: str, api_key: str) -> st
     return resolved_id
 
 
-def fetch_channel_video_ids(channel_id: str, api_key: str):
+def fetch_uploads_playlist_id(channel_id: str, api_key: str) -> str:
+    data = fetch_json(build_url(
+        'channels',
+        part='contentDetails',
+        id=channel_id,
+        key=api_key,
+        maxResults=1,
+    ))
+    items = data.get('items', [])
+    uploads_id = (
+        items[0]
+        .get('contentDetails', {})
+        .get('relatedPlaylists', {})
+        .get('uploads', '')
+    ) if items else ''
+    if not uploads_id:
+        fail('YouTube 채널의 공개 업로드 목록을 확인하지 못해 동기화를 중단했습니다.')
+    return uploads_id
+
+
+def fetch_playlist_video_ids(playlist_id: str, api_key: str):
     ids = []
+    seen = set()
     page_token = ''
-    page_count = 0
     while True:
-        page_count += 1
-        if page_count > 4:
-            fail('채널 영상 검색 페이지 수가 안전 기준을 초과해 동기화를 중단했습니다.')
+        params = {
+            'part': 'snippet,contentDetails',
+            'maxResults': 50,
+            'playlistId': playlist_id,
+            'key': api_key,
+        }
+        if page_token:
+            params['pageToken'] = page_token
+        data = fetch_json(
+            build_url('playlistItems', **params),
+            not_found_ok=not page_token,
+        )
+        if data is None:
+            return None
+        for item in data.get('items', []):
+            snippet = item.get('snippet', {})
+            video_id = (
+                item.get('contentDetails', {}).get('videoId')
+                or snippet.get('resourceId', {}).get('videoId')
+            )
+            if not video_id or video_id in seen:
+                continue
+            title = clean_title(snippet.get('title'))
+            if title in ('Private video', 'Deleted video'):
+                continue
+            seen.add(video_id)
+            ids.append(video_id)
+            if len(ids) > MAX_PLAYLIST_ITEMS:
+                fail(f'채널 업로드 수가 안전 기준({MAX_PLAYLIST_ITEMS}개)를 초과해 접근을 잠금 처리했습니다.')
+        page_token = data.get('nextPageToken', '')
+        if not page_token:
+            break
+    return ids
+
+
+def fetch_channel_video_ids_from_search(channel_id: str, api_key: str):
+    ids = []
+    seen = set()
+    page_token = ''
+    for _ in range(10):
         params = {
             'part': 'snippet',
             'maxResults': 50,
@@ -114,21 +173,17 @@ def fetch_channel_video_ids(channel_id: str, api_key: str):
             params['pageToken'] = page_token
         data = fetch_json(build_url('search', **params))
         for item in data.get('items', []):
-            snippet = item.get('snippet', {})
-            resource = item.get('id', {})
-            video_id = resource.get('videoId')
-            if not video_id:
+            video_id = item.get('id', {}).get('videoId')
+            if not video_id or video_id in seen:
                 continue
-            title = clean_title(snippet.get('title'))
-            if title in ('Private video', 'Deleted video'):
-                continue
+            seen.add(video_id)
             ids.append(video_id)
             if len(ids) > MAX_PLAYLIST_ITEMS:
                 fail(f'채널 업로드 수가 안전 기준({MAX_PLAYLIST_ITEMS}개)를 초과해 접근을 잠금 처리했습니다.')
         page_token = data.get('nextPageToken', '')
         if not page_token:
-            break
-    return ids
+            return ids
+    fail('YouTube 검색 결과가 500개를 초과해 정확한 전체 동기화를 중단했습니다.')
 
 
 def fetch_video_details(video_ids, api_key: str):
@@ -144,14 +199,14 @@ def fetch_video_details(video_ids, api_key: str):
         ))
         for item in data.get('items', []):
             status = item.get('status', {})
-            if status.get('privacyStatus') not in ('public', 'unlisted'):
+            if status.get('privacyStatus') != 'public':
                 continue
             snippet = item.get('snippet', {})
             video_id = item.get('id')
             if not isinstance(video_id, str) or len(video_id) != 11 or not all(char.isalnum() or char in '_-' for char in video_id):
                 continue
             title = clean_title(snippet.get('title'))
-            published_at = (snippet.get('publishedAt') or '')[:10]
+            published_at = str(snippet.get('publishedAt') or '')[:25]
             details.append({
                 'key': f'yt-{video_id}',
                 'title': title,
@@ -180,7 +235,7 @@ def load_existing_items():
             'key': f'yt-{video_id}',
             'title': clean_title(item.get('title')),
             'url': f'{BASE_VIDEO_URL}{video_id}',
-            'uploadedAt': str(item.get('uploadedAt', ''))[:10],
+            'uploadedAt': str(item.get('uploadedAt', ''))[:25],
         })
     return items
 
@@ -202,16 +257,22 @@ def main():
         fail('Missing YOUTUBE_API_KEY', lock_site=False)
 
     channel_id = resolve_channel_id(CHANNEL_ID, CHANNEL_HANDLE, API_KEY)
-    video_ids = fetch_channel_video_ids(channel_id, API_KEY)
+    uploads_playlist_id = fetch_uploads_playlist_id(channel_id, API_KEY)
+    video_ids = fetch_playlist_video_ids(uploads_playlist_id, API_KEY)
+    source = 'youtube-channel-uploads-sync'
+    if video_ids is None:
+        print('Public uploads playlist is not available yet; using channel search fallback.')
+        video_ids = fetch_channel_video_ids_from_search(channel_id, API_KEY)
+        source = 'youtube-channel-search-fallback-sync'
     discovered_items = fetch_video_details(video_ids, API_KEY)
     items = merge_items(load_existing_items(), discovered_items)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    write_status(False, '')
+    write_status(False, '', source)
     print(
         f'Updated {OUTPUT_PATH} with {len(items)} total items '
-        f'({len(discovered_items)} public channel videos and Shorts discovered)'
+        f'({len(discovered_items)} public channel uploads discovered, including Shorts)'
     )
 
 
