@@ -1,4 +1,4 @@
-name: Update portfolio from YouTube playlist
+name: Update portfolio from YouTube channel uploads
 
 on:
   workflow_dispatch:
@@ -25,10 +25,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Update portfolio data from playlist
+      - name: Update portfolio data from channel uploads
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          YOUTUBE_PLAYLIST_ID: PLP1n0xDoMghs7Fy6fHsWDSmTrUOrvescQ
+          YOUTUBE_SOURCE_PLAYLIST_ID: PLP1n0xDoMghs7Fy6fHsWDSmTrUOrvescQ
           PORTFOLIO_OUTPUT_PATH: assets/portfolio/portfolio-links.json
           PORTFOLIO_STATUS_PATH: assets/portfolio/portfolio-status.json
           MAX_PLAYLIST_ITEMS: '150'
