@@ -24,7 +24,7 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
-def write_status(locked: bool, reason: str, source: str = 'youtube-channel-uploads-sync'):
+def write_status(locked: bool, reason: str, source: str = 'youtube-channel-search-sync'):
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         'locked': locked,
@@ -93,46 +93,29 @@ def resolve_channel_id(channel_id: str, source_video_id: str, api_key: str) -> s
     return resolved_id
 
 
-def fetch_uploads_playlist_id(channel_id: str, api_key: str) -> str:
-    data = fetch_json(build_url(
-        'channels',
-        part='contentDetails',
-        id=channel_id,
-        key=api_key,
-        maxResults=1,
-    ))
-    items = data.get('items', [])
-    uploads_id = (
-        items[0]
-        .get('contentDetails', {})
-        .get('relatedPlaylists', {})
-        .get('uploads', '')
-    ) if items else ''
-    if not uploads_id:
-        fail('YouTube 채널의 전체 업로드 목록을 확인하지 못해 동기화를 중단했습니다.')
-    return uploads_id
-
-
-def fetch_playlist_video_ids(playlist_id: str, api_key: str):
+def fetch_channel_video_ids(channel_id: str, api_key: str):
     ids = []
     page_token = ''
     page_count = 0
     while True:
         page_count += 1
         if page_count > 4:
-            fail('재생목록 페이지 수가 비정상적으로 많아 동기화를 중단했습니다.')
+            fail('채널 영상 검색 페이지 수가 안전 기준을 초과해 동기화를 중단했습니다.')
         params = {
-            'part': 'snippet,contentDetails',
+            'part': 'snippet',
             'maxResults': 50,
-            'playlistId': playlist_id,
+            'channelId': channel_id,
+            'order': 'date',
+            'type': 'video',
+            'safeSearch': 'none',
             'key': api_key,
         }
         if page_token:
             params['pageToken'] = page_token
-        data = fetch_json(build_url('playlistItems', **params))
+        data = fetch_json(build_url('search', **params))
         for item in data.get('items', []):
             snippet = item.get('snippet', {})
-            resource = snippet.get('resourceId', {})
+            resource = item.get('id', {})
             video_id = resource.get('videoId')
             if not video_id:
                 continue
@@ -186,8 +169,7 @@ def main():
         fail('Missing YOUTUBE_API_KEY', lock_site=False)
 
     channel_id = resolve_channel_id(CHANNEL_ID, SOURCE_VIDEO_ID, API_KEY)
-    uploads_playlist_id = fetch_uploads_playlist_id(channel_id, API_KEY)
-    video_ids = fetch_playlist_video_ids(uploads_playlist_id, API_KEY)
+    video_ids = fetch_channel_video_ids(channel_id, API_KEY)
     items = fetch_video_details(video_ids, API_KEY)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
