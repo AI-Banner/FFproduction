@@ -8,7 +8,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-PLAYLIST_ID = os.environ.get('YOUTUBE_PLAYLIST_ID', '').strip()
+CHANNEL_ID = os.environ.get('YOUTUBE_CHANNEL_ID', '').strip()
+SOURCE_PLAYLIST_ID = os.environ.get('YOUTUBE_SOURCE_PLAYLIST_ID', '').strip()
 API_KEY = os.environ.get('YOUTUBE_API_KEY', '').strip()
 OUTPUT_PATH = Path(os.environ.get('PORTFOLIO_OUTPUT_PATH', 'assets/portfolio/portfolio-links.json'))
 STATUS_PATH = Path(os.environ.get('PORTFOLIO_STATUS_PATH', 'assets/portfolio/portfolio-status.json'))
@@ -23,7 +24,7 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
 
 
-def write_status(locked: bool, reason: str, source: str = 'youtube-playlist-sync'):
+def write_status(locked: bool, reason: str, source: str = 'youtube-channel-uploads-sync'):
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         'locked': locked,
@@ -74,6 +75,44 @@ def clean_title(value) -> str:
     return ''.join(char for char in title if char.isprintable())[:200]
 
 
+def resolve_channel_id(channel_id: str, source_playlist_id: str, api_key: str) -> str:
+    if channel_id:
+        return channel_id
+
+    data = fetch_json(build_url(
+        'playlists',
+        part='snippet',
+        id=source_playlist_id,
+        key=api_key,
+        maxResults=1,
+    ))
+    items = data.get('items', [])
+    resolved_id = items[0].get('snippet', {}).get('channelId', '') if items else ''
+    if not resolved_id:
+        fail('기준 재생목록에서 YouTube 채널을 확인하지 못해 동기화를 중단했습니다.')
+    return resolved_id
+
+
+def fetch_uploads_playlist_id(channel_id: str, api_key: str) -> str:
+    data = fetch_json(build_url(
+        'channels',
+        part='contentDetails',
+        id=channel_id,
+        key=api_key,
+        maxResults=1,
+    ))
+    items = data.get('items', [])
+    uploads_id = (
+        items[0]
+        .get('contentDetails', {})
+        .get('relatedPlaylists', {})
+        .get('uploads', '')
+    ) if items else ''
+    if not uploads_id:
+        fail('YouTube 채널의 전체 업로드 목록을 확인하지 못해 동기화를 중단했습니다.')
+    return uploads_id
+
+
 def fetch_playlist_video_ids(playlist_id: str, api_key: str):
     ids = []
     page_token = ''
@@ -102,7 +141,7 @@ def fetch_playlist_video_ids(playlist_id: str, api_key: str):
                 continue
             ids.append(video_id)
             if len(ids) > MAX_PLAYLIST_ITEMS:
-                fail(f'재생목록 영상 수가 안전 기준({MAX_PLAYLIST_ITEMS}개)를 초과해 접근을 잠금 처리했습니다.')
+                fail(f'채널 업로드 수가 안전 기준({MAX_PLAYLIST_ITEMS}개)를 초과해 접근을 잠금 처리했습니다.')
         page_token = data.get('nextPageToken', '')
         if not page_token:
             break
@@ -141,18 +180,20 @@ def fetch_video_details(video_ids, api_key: str):
 
 
 def main():
-    if not PLAYLIST_ID:
-        fail('Missing YOUTUBE_PLAYLIST_ID', lock_site=False)
+    if not CHANNEL_ID and not SOURCE_PLAYLIST_ID:
+        fail('Missing YOUTUBE_CHANNEL_ID or YOUTUBE_SOURCE_PLAYLIST_ID', lock_site=False)
     if not API_KEY:
         fail('Missing YOUTUBE_API_KEY', lock_site=False)
 
-    video_ids = fetch_playlist_video_ids(PLAYLIST_ID, API_KEY)
+    channel_id = resolve_channel_id(CHANNEL_ID, SOURCE_PLAYLIST_ID, API_KEY)
+    uploads_playlist_id = fetch_uploads_playlist_id(channel_id, API_KEY)
+    video_ids = fetch_playlist_video_ids(uploads_playlist_id, API_KEY)
     items = fetch_video_details(video_ids, API_KEY)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     write_status(False, '')
-    print(f'Updated {OUTPUT_PATH} with {len(items)} items')
+    print(f'Updated {OUTPUT_PATH} with {len(items)} channel uploads, including Shorts')
 
 
 if __name__ == '__main__':
