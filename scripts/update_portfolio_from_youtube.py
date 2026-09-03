@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 CHANNEL_ID = os.environ.get('YOUTUBE_CHANNEL_ID', '').strip()
-SOURCE_VIDEO_ID = os.environ.get('YOUTUBE_SOURCE_VIDEO_ID', '').strip()
+CHANNEL_HANDLE = os.environ.get('YOUTUBE_CHANNEL_HANDLE', '').strip()
 API_KEY = os.environ.get('YOUTUBE_API_KEY', '').strip()
 OUTPUT_PATH = Path(os.environ.get('PORTFOLIO_OUTPUT_PATH', 'assets/portfolio/portfolio-links.json'))
 STATUS_PATH = Path(os.environ.get('PORTFOLIO_STATUS_PATH', 'assets/portfolio/portfolio-status.json'))
@@ -75,21 +75,21 @@ def clean_title(value) -> str:
     return ''.join(char for char in title if char.isprintable())[:200]
 
 
-def resolve_channel_id(channel_id: str, source_video_id: str, api_key: str) -> str:
+def resolve_channel_id(channel_id: str, channel_handle: str, api_key: str) -> str:
     if channel_id:
         return channel_id
 
     data = fetch_json(build_url(
-        'videos',
-        part='snippet',
-        id=source_video_id,
+        'channels',
+        part='id',
+        forHandle=channel_handle.lstrip('@'),
         key=api_key,
         maxResults=1,
     ))
     items = data.get('items', [])
-    resolved_id = items[0].get('snippet', {}).get('channelId', '') if items else ''
+    resolved_id = items[0].get('id', '') if items else ''
     if not resolved_id:
-        fail('기준 영상에서 YouTube 채널을 확인하지 못해 동기화를 중단했습니다.')
+        fail('YouTube 채널 핸들에서 채널 ID를 확인하지 못해 동기화를 중단했습니다.')
     return resolved_id
 
 
@@ -162,20 +162,57 @@ def fetch_video_details(video_ids, api_key: str):
     return details
 
 
+def load_existing_items():
+    try:
+        data = json.loads(OUTPUT_PATH.read_text(encoding='utf-8'))
+    except (FileNotFoundError, UnicodeDecodeError, json.JSONDecodeError):
+        return []
+
+    items = []
+    for item in data if isinstance(data, list) else []:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get('key', ''))
+        video_id = key[3:] if key.startswith('yt-') else ''
+        if len(video_id) != 11 or not all(char.isalnum() or char in '_-' for char in video_id):
+            continue
+        items.append({
+            'key': f'yt-{video_id}',
+            'title': clean_title(item.get('title')),
+            'url': f'{BASE_VIDEO_URL}{video_id}',
+            'uploadedAt': str(item.get('uploadedAt', ''))[:10],
+        })
+    return items
+
+
+def merge_items(existing_items, discovered_items):
+    merged = {item['key']: item for item in existing_items}
+    merged.update({item['key']: item for item in discovered_items})
+    return sorted(
+        merged.values(),
+        key=lambda x: (x.get('uploadedAt', ''), x.get('key', '')),
+        reverse=True,
+    )
+
+
 def main():
-    if not CHANNEL_ID and not SOURCE_VIDEO_ID:
-        fail('Missing YOUTUBE_CHANNEL_ID or YOUTUBE_SOURCE_VIDEO_ID', lock_site=False)
+    if not CHANNEL_ID and not CHANNEL_HANDLE:
+        fail('Missing YOUTUBE_CHANNEL_ID or YOUTUBE_CHANNEL_HANDLE', lock_site=False)
     if not API_KEY:
         fail('Missing YOUTUBE_API_KEY', lock_site=False)
 
-    channel_id = resolve_channel_id(CHANNEL_ID, SOURCE_VIDEO_ID, API_KEY)
+    channel_id = resolve_channel_id(CHANNEL_ID, CHANNEL_HANDLE, API_KEY)
     video_ids = fetch_channel_video_ids(channel_id, API_KEY)
-    items = fetch_video_details(video_ids, API_KEY)
+    discovered_items = fetch_video_details(video_ids, API_KEY)
+    items = merge_items(load_existing_items(), discovered_items)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     write_status(False, '')
-    print(f'Updated {OUTPUT_PATH} with {len(items)} channel uploads, including Shorts')
+    print(
+        f'Updated {OUTPUT_PATH} with {len(items)} total items '
+        f'({len(discovered_items)} public channel videos and Shorts discovered)'
+    )
 
 
 if __name__ == '__main__':
