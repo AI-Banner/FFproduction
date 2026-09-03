@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 CHANNEL_ID = os.environ.get('YOUTUBE_CHANNEL_ID', '').strip()
-SOURCE_PLAYLIST_ID = os.environ.get('YOUTUBE_SOURCE_PLAYLIST_ID', '').strip()
+SOURCE_VIDEO_ID = os.environ.get('YOUTUBE_SOURCE_VIDEO_ID', '').strip()
 API_KEY = os.environ.get('YOUTUBE_API_KEY', '').strip()
 OUTPUT_PATH = Path(os.environ.get('PORTFOLIO_OUTPUT_PATH', 'assets/portfolio/portfolio-links.json'))
 STATUS_PATH = Path(os.environ.get('PORTFOLIO_STATUS_PATH', 'assets/portfolio/portfolio-status.json'))
@@ -75,21 +75,21 @@ def clean_title(value) -> str:
     return ''.join(char for char in title if char.isprintable())[:200]
 
 
-def resolve_channel_id(channel_id: str, source_playlist_id: str, api_key: str) -> str:
+def resolve_channel_id(channel_id: str, source_video_id: str, api_key: str) -> str:
     if channel_id:
         return channel_id
 
     data = fetch_json(build_url(
-        'playlists',
+        'videos',
         part='snippet',
-        id=source_playlist_id,
+        id=source_video_id,
         key=api_key,
         maxResults=1,
     ))
     items = data.get('items', [])
     resolved_id = items[0].get('snippet', {}).get('channelId', '') if items else ''
     if not resolved_id:
-        fail('기준 재생목록에서 YouTube 채널을 확인하지 못해 동기화를 중단했습니다.')
+        fail('기준 영상에서 YouTube 채널을 확인하지 못해 동기화를 중단했습니다.')
     return resolved_id
 
 
@@ -180,12 +180,12 @@ def fetch_video_details(video_ids, api_key: str):
 
 
 def main():
-    if not CHANNEL_ID and not SOURCE_PLAYLIST_ID:
-        fail('Missing YOUTUBE_CHANNEL_ID or YOUTUBE_SOURCE_PLAYLIST_ID', lock_site=False)
+    if not CHANNEL_ID and not SOURCE_VIDEO_ID:
+        fail('Missing YOUTUBE_CHANNEL_ID or YOUTUBE_SOURCE_VIDEO_ID', lock_site=False)
     if not API_KEY:
         fail('Missing YOUTUBE_API_KEY', lock_site=False)
 
-    channel_id = resolve_channel_id(CHANNEL_ID, SOURCE_PLAYLIST_ID, API_KEY)
+    channel_id = resolve_channel_id(CHANNEL_ID, SOURCE_VIDEO_ID, API_KEY)
     uploads_playlist_id = fetch_uploads_playlist_id(channel_id, API_KEY)
     video_ids = fetch_playlist_video_ids(uploads_playlist_id, API_KEY)
     items = fetch_video_details(video_ids, API_KEY)
