@@ -28,7 +28,7 @@ jobs:
       - name: Update portfolio data from channel uploads
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          YOUTUBE_SOURCE_VIDEO_ID: YsVx1RGFMu0
+          YOUTUBE_CHANNEL_HANDLE: BannerAi-k4u
           PORTFOLIO_OUTPUT_PATH: assets/portfolio/portfolio-links.json
           PORTFOLIO_STATUS_PATH: assets/portfolio/portfolio-status.json
           MAX_PLAYLIST_ITEMS: '150'
