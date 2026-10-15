@@ -1,6 +1,23 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 * { box-sizing: border-box; }
+
+/* Image portfolio: preserve each original aspect ratio without cropping. */
+.section.section-visuals { max-width: 1320px; min-height: auto; padding-top: 100px; padding-bottom: 48px; scroll-margin-top: 100px; }
+.section-visuals h2 { color: #dcbc58; line-height: 1.2; }
+.visual-gallery { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(12px, 1.8vw, 24px); align-items: start; margin-top: 20px; }
+.visual-gallery a { display: block; grid-column: span 4; border-radius: 12px; outline-offset: 5px; }
+.visual-gallery a:nth-child(n+4) { grid-column: span 3; }
+.visual-gallery img { display: block; width: 100%; height: auto; border-radius: 12px; }
+.visual-gallery a:hover { box-shadow: 0 0 0 1px rgba(220,188,88,.65); }
+@media (max-width: 900px) {
+  .visual-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visual-gallery a, .visual-gallery a:nth-child(n+4) { grid-column: auto; }
+}
+@media (max-width: 560px) {
+  .visual-gallery { grid-template-columns: 1fr; gap: 20px; }
+  .section.section-visuals { padding-top: 64px; }
+}
 html, body {
   margin: 0;
   padding: 0;
