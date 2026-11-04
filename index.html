@@ -359,7 +359,7 @@
     <p class="section-eyebrow">SELECTED WORK</p>
     <h2>생각을 장면으로 만든<br />AI 콘텐츠 제작 사례</h2>
     <p class="portfolio-note">썸네일을 선택하면 영상을 바로 확인할 수 있습니다.</p>
-    <div class="cards portfolio-cards" id="mainPortfolioCards">
+    <div class="cards portfolio-cards" id="mainPortfolioCards" style="display:none">
       <article class="card portfolio-card" data-generated="true">
         <p class="portfolio-desc">애니메이션 시네마틱 영상 (트레일러)</p>
         <a class="portfolio-thumb-link" href="https://youtu.be/YsVx1RGFMu0" data-video-id="YsVx1RGFMu0" title="클릭하여 재생">
@@ -940,6 +940,7 @@
 
         const moreCard = mainPortfolioCards.querySelector('.portfolio-more-card');
         mainPortfolioCards.querySelectorAll('.portfolio-loading-card, .portfolio-card[data-generated="true"]').forEach((el) => el.remove());
+        mainPortfolioCards.style.removeProperty('display');
 
         const latestItems = items
           .filter((item) => item && item.url)

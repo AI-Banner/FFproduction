@@ -76,7 +76,7 @@
       <p class="portfolio-archive-intro">브랜드 필름, 애니메이션, 시네마틱 영상, 기업 홍보, 제품·서비스 광고와 숏폼 등 FF Production의 AI 콘텐츠 제작 사례입니다.</p>
     </div>
 
-    <section id="portfolioArchiveList" class="portfolio-archive-list" aria-label="AI 영상 제작 사례">
+    <section id="portfolioArchiveList" class="portfolio-archive-list" aria-label="AI 영상 제작 사례" style="display:none">
       <article class="card portfolio-archive-item" data-portfolio-key="yt-YsVx1RGFMu0">
         <a href="https://youtu.be/YsVx1RGFMu0" target="_blank" rel="noopener noreferrer"><img class="portfolio-archive-thumb" src="https://img.youtube.com/vi/YsVx1RGFMu0/maxresdefault.jpg" alt="애니메이션 시네마틱 영상 트레일러" loading="eager" /></a>
         <div class="portfolio-archive-meta"><h2 class="portfolio-archive-title">애니메이션 시네마틱 영상 (트레일러)</h2><p class="portfolio-archive-desc">AI로 구현한 애니메이션 스타일의 시네마틱 트레일러 제작 사례입니다.</p><div class="portfolio-archive-actions"><a class="portfolio-archive-link" href="https://youtu.be/YsVx1RGFMu0" target="_blank" rel="noopener noreferrer">YouTube에서 영상 보기</a></div></div>
@@ -213,16 +213,17 @@
           .then((res) => res.ok ? res.json() : []);
       })
       .then((items) => {
-        if (!Array.isArray(items) || !archiveList || items.length === 0) return;
+        if (!Array.isArray(items) || !archiveList) return;
         const articles = items
           .filter((item) => item && extractYoutubeId(item.url))
           .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0))
           .map(buildPortfolioArticle)
           .filter(Boolean);
-        if (articles.length > 0) archiveList.replaceChildren(...articles);
+        archiveList.replaceChildren(...articles);
+        archiveList.style.removeProperty('display');
       })
       .catch(() => {
-        // 정적 포트폴리오를 그대로 유지해 검색 엔진과 방문자에게 콘텐츠를 제공합니다.
+        // 공개 상태를 확인한 목록이 없으면 이전 영상 카드를 표시하지 않습니다.
       });
   </script>
 </body>

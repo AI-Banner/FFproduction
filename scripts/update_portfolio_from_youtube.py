@@ -264,15 +264,17 @@ def main():
         print('Public uploads playlist is not available yet; using channel search fallback.')
         video_ids = fetch_channel_video_ids_from_search(channel_id, API_KEY)
         source = 'youtube-channel-search-fallback-sync'
-    discovered_items = fetch_video_details(video_ids, API_KEY)
-    items = merge_items(load_existing_items(), discovered_items)
+    # Recheck saved IDs too: videos that became private or disappeared may
+    # no longer be returned by the channel's uploads list.
+    saved_ids = [item['key'][3:] for item in load_existing_items()]
+    items = fetch_video_details(list(dict.fromkeys(video_ids + saved_ids)), API_KEY)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(items, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     write_status(False, '', source)
     print(
         f'Updated {OUTPUT_PATH} with {len(items)} total items '
-        f'({len(discovered_items)} public channel uploads discovered, including Shorts)'
+        f'({len(video_ids)} channel upload IDs checked, including Shorts)'
     )
 
 
